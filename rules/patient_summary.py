@@ -1,6 +1,6 @@
 # rules/patient_summary.py
 import argparse
-from datetime import date, datetime
+from datetime import date
 import json
 import re
 import sys
@@ -11,15 +11,7 @@ from rules.disease_inference import (
     infer_patient_disease_tags,
     primary_disease_tag,
 )
-
-
-def _as_float(value, default=0.0) -> float | None:
-    if value in (None, ""):
-        return default
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
+from rules.utils import parse_date, safe_float
 
 
 def _as_list(value) -> list[str]:
@@ -55,29 +47,9 @@ def _parse_bp(bp_value: str) -> tuple[float | None, float | None]:
     if not match:
         return None, None
 
-    systolic = _as_float(match.group(1), default=None)
-    diastolic = _as_float(match.group(2), default=None)
+    systolic = safe_float(match.group(1))
+    diastolic = safe_float(match.group(2))
     return systolic, diastolic
-
-
-def _parse_dob(value) -> date | None:
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
-
-    raw = str(value).strip()
-    if not raw:
-        return None
-
-    for fmt in ("%Y%m%d", "%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
-        try:
-            return datetime.strptime(raw, fmt).date()
-        except ValueError:
-            continue
-    return None
 
 
 def _is_present(value) -> bool:
@@ -174,7 +146,7 @@ def _build_clinical_observations(raw_patient: dict) -> list[dict]:
 
 
 def _calculate_age(dob_value) -> int | None:
-    dob = _parse_dob(dob_value)
+    dob = parse_date(dob_value)
     if dob is None:
         return None
 
@@ -210,12 +182,12 @@ def _normalize_patient(raw_patient: dict) -> dict:
 
     return {
         "patient_id": raw_patient.get("patient_id") or raw_patient.get("uniqueempi"),
-        "egfr": _as_float(raw_patient.get("egfr", raw_patient.get("egfr_result")), default=None),
-        "creatinine": _as_float(raw_patient.get("creatinine", raw_patient.get("creatinine_result")), default=None),
-        "potassium": _as_float(raw_patient.get("potassium", raw_patient.get("potassium_result")), default=None),
-        "urine_acr": _as_float(raw_patient.get("urine_acr", raw_patient.get("acr_result")), default=None),
-        "systolic_bp": _as_float(systolic_bp, default=None),
-        "diastolic_bp": _as_float(diastolic_bp, default=None),
+        "egfr": safe_float(raw_patient.get("egfr", raw_patient.get("egfr_result"))),
+        "creatinine": safe_float(raw_patient.get("creatinine", raw_patient.get("creatinine_result"))),
+        "potassium": safe_float(raw_patient.get("potassium", raw_patient.get("potassium_result"))),
+        "urine_acr": safe_float(raw_patient.get("urine_acr", raw_patient.get("acr_result"))),
+        "systolic_bp": safe_float(systolic_bp),
+        "diastolic_bp": safe_float(diastolic_bp),
         "egfr_date": raw_patient.get("egfr_date") or raw_patient.get("egfr_performed_date"),
         "creatinine_date": raw_patient.get("creatinine_date") or raw_patient.get("creatinine_performed_date"),
         "potassium_date": raw_patient.get("potassium_date") or raw_patient.get("potassium_performed_date"),

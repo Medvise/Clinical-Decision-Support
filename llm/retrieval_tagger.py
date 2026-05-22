@@ -4,37 +4,24 @@ from __future__ import annotations
 
 import logging
 
-from openai import OpenAI
 from pydantic import BaseModel, Field, field_validator
 
-from config import LLM_MODEL, OPENAI_API_KEY, RETRIEVAL_TAG_MODEL
-from llm.llm_client import _parse_llm_json
-from pipeline.logging_utils import log_prompt
+from config import LLM_MODEL, RETRIEVAL_TAG_MODEL
+from llm.llm_client import RETRIEVAL_TAGGER_SYSTEM_PROMPT, call_llm_json, get_openai_client
 from llm.prompt_builder import _patient_context_block
+from pipeline.logging_utils import log_prompt
 from retrieval.retriever import decompose_query
+from retrieval.tags_vocab import (
+    ALLOWED_BP_STAGE_TAGS,
+    ALLOWED_CKD_STAGE_TAGS,
+    ALLOWED_COMORBIDITY_TAGS,
+    ALLOWED_DISEASE_TAGS,
+    ALLOWED_DRUG_TAGS,
+    DEFAULT_CHUNK_TYPES,
+)
 from rules.disease_inference import infer_patient_disease_tags, primary_disease_tag
 
 logger = logging.getLogger(__name__)
-
-_openai = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-
-ALLOWED_DISEASE_TAGS = frozenset({"CKD", "hypertension", "ACHD"})
-ALLOWED_CKD_STAGE_TAGS = frozenset({"G1", "G2", "G3", "G3a", "G3b", "G4", "G5", "A1", "A2", "A3"})
-ALLOWED_BP_STAGE_TAGS = frozenset({"normal", "elevated", "stage1", "stage2", "severe"})
-ALLOWED_COMORBIDITY_TAGS = frozenset({
-    "diabetes", "heart_failure", "coronary", "pregnancy", "atrial_fibrillation",
-    "stroke", "obesity", "PAH", "cyanosis", "CKD",
-})
-ALLOWED_DRUG_TAGS = frozenset({
-    "ACEi", "ARB", "SGLT2i", "MRA", "CCB", "thiazide", "betablocker", "GLP1", "statin",
-})
-DEFAULT_CHUNK_TYPES = [
-    "recommendation",
-    "practice_point",
-    "rationale",
-    "synopsis",
-    "supportive_text",
-]
 
 
 class RetrievalTagSpec(BaseModel):
@@ -169,7 +156,7 @@ def _build_tagger_prompt(summary: dict, user_query: str) -> str:
 
 def extract_retrieval_tags(patient_summary: dict, user_query: str) -> RetrievalTagSpec:
     """LLM-derived retrieval filters with validation and decompose_query fallback."""
-    if _openai is None:
+    if get_openai_client() is None:
         logger.warning("OPENAI_API_KEY missing; using decompose_query fallback for retrieval tags")
         return _validate_spec(_fallback_spec(patient_summary, user_query))
 
@@ -181,24 +168,13 @@ def extract_retrieval_tags(patient_summary: dict, user_query: str) -> RetrievalT
     )
     model = RETRIEVAL_TAG_MODEL or LLM_MODEL
     try:
-        response = _openai.chat.completions.create(
+        parsed = call_llm_json(
+            prompt,
             model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You output JSON only for clinical guideline retrieval metadata. "
-                        "Use allowed tag vocabularies exactly."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
+            system=RETRIEVAL_TAGGER_SYSTEM_PROMPT,
             temperature=0,
             max_tokens=800,
-            response_format={"type": "json_object"},
         )
-        raw = response.choices[0].message.content.strip()
-        parsed = _parse_llm_json(raw)
         spec = _validate_spec(RetrievalTagSpec.model_validate(parsed))
     except Exception as exc:
         logger.warning("Retrieval tagger failed (%s); using decompose_query fallback", exc)

@@ -3,27 +3,9 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
 
 from api.schema import ClinicalFlag, Demographics, FlagSeverity, LabValue, PatientSummary
-
-
-def _parse_date(value) -> date | None:
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
-    raw = str(value).strip()
-    if not raw:
-        return None
-    for fmt in ("%Y%m%d", "%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
-        try:
-            return datetime.strptime(raw, fmt).date()
-        except ValueError:
-            continue
-    return None
+from rules.utils import parse_date
 
 
 def _flag_code(message: str) -> str:
@@ -85,7 +67,7 @@ def _to_demographics(raw: dict | None) -> Demographics | None:
         return None
     return Demographics(
         gender=raw.get("gender"),
-        dob=_parse_date(raw.get("dob") or raw.get("memdob")),
+        dob=parse_date(raw.get("dob") or raw.get("memdob")),
         age=raw.get("age"),
         first_name=raw.get("first_name"),
         last_name=raw.get("last_name"),

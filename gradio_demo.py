@@ -2,12 +2,10 @@ import logging
 
 import gradio as gr
 
+from pipeline.logging_utils import configure_logging
 from pipeline.orchestrator import run_cdss_pipeline
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 

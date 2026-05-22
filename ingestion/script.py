@@ -20,7 +20,6 @@ import time
 import uuid
 from pathlib import Path
 
-import requests
 from pypdf import PdfReader
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException
@@ -36,9 +35,9 @@ from config import (  # noqa: E402
     QDRANT_API_KEY,
     QDRANT_COLLECTION,
     EMBEDDINGS_URL,
-    EMBEDDINGS_TIMEOUT_SECONDS,
 )
 from ingestion.parser_ref import parse_pdf  # noqa: E402
+from llm.embeddings import fetch_embeddings_http  # noqa: E402
 
 
 EMBEDDING_BATCH_SIZE = 50
@@ -57,22 +56,7 @@ def extract_text(pdf_path: Path) -> str:
 
 
 def get_embeddings(texts: list[str]) -> list[list[float]]:
-    resp = requests.post(
-        EMBEDDINGS_URL,
-        json={"sentences": texts},
-        timeout=(10, EMBEDDINGS_TIMEOUT_SECONDS),
-    )
-    try:
-        resp.raise_for_status()
-    except requests.HTTPError as e:
-        body = (resp.text or "").strip()
-        if len(body) > 500:
-            body = body[:500] + "…"
-        raise RuntimeError(
-            f"Embeddings request failed ({resp.status_code}) for {EMBEDDINGS_URL}. "
-            f"Response body: {body or '<empty>'}"
-        ) from e
-    return resp.json()["embeddings"]
+    return fetch_embeddings_http(texts)
 
 
 def create_collection(client: QdrantClient, collection_name: str, vector_size: int) -> None:

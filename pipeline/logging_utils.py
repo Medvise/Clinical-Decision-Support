@@ -10,6 +10,15 @@ from config import LOG_LLM_PROMPTS, LOG_PROMPT_MAX_CHARS, LOG_RETRIEVED_CHUNKS
 
 logger = logging.getLogger(__name__)
 
+_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+
+
+def configure_logging(level: int = logging.INFO) -> None:
+    """Configure root logging once (safe for API + Gradio entry points)."""
+    if logging.getLogger().handlers:
+        return
+    logging.basicConfig(level=level, format=_LOG_FORMAT)
+
 
 def log_retrieved_chunks(
     records: list[dict[str, Any]],

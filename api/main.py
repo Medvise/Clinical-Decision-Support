@@ -6,12 +6,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from api.schema import CDSSRequest, CDSSResponse, ErrorResponse, SCHEMA_VERSION
+from pipeline.logging_utils import configure_logging
 from pipeline.orchestrator import run_cdss_pipeline
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CDSS API", version="1.0.0")

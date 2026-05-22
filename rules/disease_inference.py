@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from rules.ckd_classifier import is_ckd_confirmed
+from rules.utils import safe_float
 
 # Aligns with Qdrant payload disease_tags: CKD | hypertension | ACHD
 _ICD_PREFIXES: dict[str, tuple[str, ...]] = {
@@ -50,15 +51,6 @@ def _has_icd_prefix(icd_codes: list[str], prefixes: tuple[str, ...]) -> bool:
     )
 
 
-def _safe_float(value) -> float | None:
-    if value in (None, ""):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
 def infer_patient_disease_tags(
     icd_codes: list[str],
     key_values: dict | None = None,
@@ -76,10 +68,10 @@ def infer_patient_disease_tags(
     codes = [str(c).strip() for c in icd_codes if c and str(c).strip()]
     tags: list[str] = []
 
-    egfr = _safe_float(key_values.get("egfr"))
-    urine_acr = _safe_float(key_values.get("urine_acr"))
-    systolic = _safe_float(key_values.get("systolic_bp"))
-    diastolic = _safe_float(key_values.get("diastolic_bp"))
+    egfr = safe_float(key_values.get("egfr"))
+    urine_acr = safe_float(key_values.get("urine_acr"))
+    systolic = safe_float(key_values.get("systolic_bp"))
+    diastolic = safe_float(key_values.get("diastolic_bp"))
 
     ckd_by_icd = is_ckd_confirmed(codes) or _has_icd_prefix(codes, _ICD_PREFIXES["CKD"])
     ckd_by_labs = (egfr is not None and egfr < CKD_LAB_EGFR_THRESHOLD) or (

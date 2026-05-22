@@ -2,8 +2,9 @@
 from rules.ckd_classifier import (
     classify_ckd_stage,
     classify_acr_category,
-    is_ckd_confirmed
+    is_ckd_confirmed,
 )
+from rules.utils import format_yyyymmdd_display, safe_float
 
 # ── Drug name lists for medication gap checks ────────────────────────
 RAAS_INHIBITORS = [
@@ -20,24 +21,10 @@ SGLT2_INHIBITORS = [
 ]
 
 
-def _safe_float(value, default=None):
-    if value in (None, ""):
-        return default
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
 def _format_test_date(label: str, date_value) -> str:
-    if not date_value:
+    normalized = format_yyyymmdd_display(date_value)
+    if not normalized:
         return ""
-    normalized = str(date_value).strip()
-
-    # Databricks dates often arrive as YYYYMMDD; render as YYYY/MM/DD.
-    if len(normalized) == 8 and normalized.isdigit():
-        normalized = f"{normalized[:4]}/{normalized[4:6]}/{normalized[6:]}"
-
     return f" ({label} date: {normalized})"
 
 
@@ -45,10 +32,10 @@ def run_ckd_rules(patient: dict) -> tuple[str, str, list[str]]:
     flags = []
 
     # ── Extract values ───────────────────────────────────────────────
-    egfr       = _safe_float(patient.get("egfr"))
-    potassium  = _safe_float(patient.get("potassium"))
-    urine_acr  = _safe_float(patient.get("urine_acr"))
-    systolic   = _safe_float(patient.get("systolic_bp"))
+    egfr       = safe_float(patient.get("egfr"))
+    potassium  = safe_float(patient.get("potassium"))
+    urine_acr  = safe_float(patient.get("urine_acr"))
+    systolic   = safe_float(patient.get("systolic_bp"))
     meds       = [m.lower() for m in patient.get("medications", [])]
     icd_codes  = [c.lower() for c in patient.get("icd_codes", [])]
 

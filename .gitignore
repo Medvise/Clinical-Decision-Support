@@ -16,5 +16,6 @@ __pycache__/
 *.log
 # Guideline PDFs — kept locally, not versioned
 *.pdf
-# Docs — kept locally, not versioned
+# Docs — kept locally, not versioned (README is tracked for GitHub)
 *.md
+!README.md
