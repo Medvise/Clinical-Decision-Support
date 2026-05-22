@@ -1,0 +1,20 @@
+.env
+.env.*
+!.env.example
+cdss_env/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+.idea/
+.vscode/
+*.log
+# Guideline PDFs — kept locally, not versioned
+*.pdf
+# Docs — kept locally, not versioned
+*.md
