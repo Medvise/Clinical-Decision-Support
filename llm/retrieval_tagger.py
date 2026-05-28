@@ -116,7 +116,7 @@ def _build_tagger_prompt(summary: dict, user_query: str) -> str:
         You extract structured retrieval filters for a clinical guideline search engine.
 
         Allowed values (use ONLY these exact strings):
-        - disease_tags: CKD, hypertension, ACHD
+        - disease_tags: CKD, hypertension, ACHD, diabetes, stroke, dyslipidemia
         - ckd_stage_tags: G1, G2, G3, G3a, G3b, G4, G5, A1, A2, A3
         - bp_stage_tags: normal, elevated, stage1, stage2, severe
         - comorbidity_tags: diabetes, heart_failure, coronary, pregnancy, atrial_fibrillation, stroke, obesity, PAH, cyanosis

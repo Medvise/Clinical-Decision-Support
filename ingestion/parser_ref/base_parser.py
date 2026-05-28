@@ -97,6 +97,10 @@ def enrich_tags(chunk: Chunk) -> Chunk:
         "ACHD": ["ACHD"],
         "KDIGO": ["CKD"],
         "NICE": ["CKD"],
+        "ADA": ["diabetes"],
+        "Diabetes": ["diabetes"],
+        "LIPID": ["dyslipidemia"],
+        "STROKE": ["stroke"],
     }.get(chunk.guideline, [])
 
     gl_for_cross = "KDIGO" if chunk.guideline == "NICE" else chunk.guideline
@@ -118,8 +122,9 @@ _PAGE_NOISE = re.compile(
     r"|(?:January|February|March|April|May|June|July|August|September|October|November|December)"
     r"\s+\d{1,2},?\s+\d{4}\s*\x08?\s*\n"
     r"|Circulation\.\s+\d{4};[\d:e–\-\.]+\s+DOI:[^\n]+\n"
-    r"|[A-Za-z ]+\s+\d{4}\s+(?:High Blood Pressure|ACHD)\s+Guideline\s*\n"
-    r"|(?:Jones|Gurvitz) et al\s*\n",
+    r"|Stroke\.\s+\d{4};[\d:e–\-\.]+\s+DOI:[^\n]+\n"
+    r"|[A-Za-z ]+\s+\d{4}\s+(?:High Blood Pressure|ACHD|Acute Ischemic Stroke)\s+Guideline\s*\n"
+    r"|(?:Jones|Gurvitz|Prabhakaran) et al[^\n]*\n",
     re.IGNORECASE,
 )
 
@@ -130,14 +135,33 @@ _KDIGO_NOISE = re.compile(
     re.IGNORECASE,
 )
 
+_ADA_NOISE = re.compile(
+    r"Diabetes Care\s+\d{4};\d+[^\n]*\n"
+    r"|\d{4}\.\s+Diabetes Care\s+\d{4}[^\n]*\n"
+    r"|Available from https?://[^\n]+\n"
+    r"|Accessed\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}[^\n]*\n"
+    r"|Downloaded from[^\n]+\n"
+    r"|N Engl J Med\s+\d{4}[^\n]*\n"
+    r"|https?://doi\.org/[^\n]+\n"
+    r"|Professional Practice Committee[^\n]*\n",
+    re.IGNORECASE,
+)
+
 
 def clean_text(raw: str, guideline: str) -> str:
-    if guideline in ("HTN", "ACHD"):
+    if guideline in ("HTN", "ACHD", "LIPID", "STROKE"):
         raw = _PAGE_NOISE.sub("\n", raw)
+    elif guideline in ("ADA", "Diabetes"):
+        raw = _ADA_NOISE.sub("\n", raw)
     else:
         raw = _KDIGO_NOISE.sub("\n", raw)
 
-    raw = re.sub(r"(\w)-\s*\n\s+(\w)", r"\1\2", raw)
+    # Join standard end-of-line hyphens: 'hyper-\ntension' → 'hypertension'
+    raw = re.sub(r"(\w)-\s*\n\s*(\w)", r"\1\2", raw)
+    # Join spaced end-of-line hyphens: 'hypo -\nglycemia' → 'hypoglycemia'  [ADA PDF quirk]
+    raw = re.sub(r"(\w)\s+-\s*\n\s*(\w)", r"\1\2", raw)
+    # Collapse standalone hyphen lines: 'manage\n-\nment' → 'management'  [ADA PDF quirk]
+    raw = re.sub(r"(\w)\n-\n(\w)", r"\1\2", raw)
     raw = re.sub(r"\n{3,}", "\n\n", raw)
 
     return raw.strip()

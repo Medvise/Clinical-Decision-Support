@@ -5,7 +5,7 @@ from __future__ import annotations
 from rules.ckd_classifier import is_ckd_confirmed
 from rules.utils import safe_float
 
-# Aligns with Qdrant payload disease_tags: CKD | hypertension | ACHD
+# Aligns with Qdrant payload disease_tags.
 _ICD_PREFIXES: dict[str, tuple[str, ...]] = {
     "CKD": (
         "N181", "N182", "N183", "N184", "N185", "N186", "N189", "N18",
@@ -15,6 +15,15 @@ _ICD_PREFIXES: dict[str, tuple[str, ...]] = {
     ),
     "ACHD": (
         "Q20", "Q21", "Q22", "Q23", "Q24", "Q25", "Q26", "Q27", "Q28",
+    ),
+    "diabetes": (
+        "E10", "E11", "E13", "E14",
+    ),
+    "stroke": (
+        "I60", "I61", "I62", "I63", "I64", "I65", "I66", "I67", "I68", "I69", "G45",
+    ),
+    "dyslipidemia": (
+        "E78",
     ),
 }
 
@@ -30,7 +39,7 @@ CKD_LAB_EGFR_THRESHOLD = 90
 HTN_SBP_THRESHOLD = 120
 HTN_DBP_THRESHOLD = 80
 
-DISEASE_PRIORITY = ("CKD", "ACHD", "hypertension")
+DISEASE_PRIORITY = ("CKD", "ACHD", "hypertension", "diabetes", "stroke", "dyslipidemia")
 
 
 def _normalize_icd(code: str) -> str:
@@ -62,6 +71,7 @@ def infer_patient_disease_tags(
     CKD: N18.x ICDs, is_ckd_confirmed(), or labs (eGFR < 60 / ACR ≥ 30 with eGFR).
     Hypertension: I10–I16 ICDs, or BP thresholds, or BP-related flags.
     ACHD: Q20–Q28 congenital heart ICDs.
+    diabetes/stroke/dyslipidemia: inferred from ICD coding and clinical flags.
     """
     key_values = key_values or {}
     flags = flags or []
@@ -96,6 +106,22 @@ def infer_patient_disease_tags(
 
     if _has_icd_prefix(codes, _ICD_PREFIXES["ACHD"]):
         tags.append("ACHD")
+
+    if _has_icd_prefix(codes, _ICD_PREFIXES["diabetes"]):
+        tags.append("diabetes")
+    if _has_icd_prefix(codes, _ICD_PREFIXES["stroke"]):
+        tags.append("stroke")
+    if _has_icd_prefix(codes, _ICD_PREFIXES["dyslipidemia"]):
+        tags.append("dyslipidemia")
+
+    if "diabetes" not in tags and any(
+        kw in flags_text for kw in ("diabetes", "hyperglycemia", "hba1c", "glycemic")
+    ):
+        tags.append("diabetes")
+    if "stroke" not in tags and any(
+        kw in flags_text for kw in ("stroke", "tia", "cerebrovascular")
+    ):
+        tags.append("stroke")
 
     return tags
 

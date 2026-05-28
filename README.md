@@ -1,6 +1,6 @@
 # Clinical Decision Support System (CDSS)
 
-Multi-disease clinical decision support for **CKD**, **hypertension**, and **ACHD/heart failure**, combining patient data from Databricks with guideline retrieval from Qdrant and LLM-generated recommendations with citations.
+Multi-disease clinical decision support for **CKD**, **hypertension**, **ACHD/heart failure**, **diabetes**, **stroke**, and **dyslipidemia**, combining patient data from Databricks with guideline retrieval from Qdrant and LLM-generated recommendations with citations.
 
 **Repository:** [Medvise/Clinical-Decision-Support](https://github.com/Medvise/Clinical-Decision-Support)
 
@@ -19,7 +19,7 @@ Evidence modes:
 - **`rag`** (default) — retrieve guideline chunks and ground the LLM on them.
 - **`llm_synthesis`** — skip retrieval; model answers from internal knowledge only.
 
-Supported disease tags: `CKD`, `hypertension`, `ACHD`.
+Supported disease tags: `CKD`, `hypertension`, `ACHD`, `diabetes`, `stroke`, `dyslipidemia`.
 
 ## Architecture
 
@@ -89,7 +89,7 @@ There is no `requirements.txt` in the repo yet. Install from imports:
 ```bash
 pip install \
   python-dotenv fastapi uvicorn pydantic pytest httpx gradio \
-  langgraph openai qdrant-client requests pypdf \
+  langgraph openai qdrant-client requests pypdf cryptography \
   databricks-sql-connector
 
 # Optional: cross-encoder reranking (when RERANK_ENABLED=true)
@@ -108,19 +108,21 @@ See [`.env.example`](.env.example) for all supported variables.
 
 ### 4. Guideline PDFs (local only)
 
-PDFs are **not** stored in git. Place guideline files under `ingestion/` (filenames should hint the source, e.g. `CKD.pdf`, `Hypertension.pdf`, `HeartFailure.pdf`), then ingest:
+PDFs are **not** stored in git. Place guideline files under `ingestion/` (filenames should include routing hints such as `KDIGO`, `NICE`, `HTN`, `HYPERTENSION`, `ACHD`, `DIABETES`, `STROKE`, `CHOLESTEROL`, or `LIPID`), then ingest:
 
 ```bash
 python -m ingestion.script \
   ingestion/CKD.pdf \
   ingestion/Hypertension.pdf \
-  ingestion/HeartFailure.pdf
+  ingestion/HeartFailure.pdf \
+  ingestion/Diabetes.pdf \
+  ingestion/Stroke.pdf
 ```
 
 Or:
 
 ```bash
-export INGEST_PDF_PATHS="ingestion/CKD.pdf,ingestion/Hypertension.pdf,ingestion/HeartFailure.pdf"
+export INGEST_PDF_PATHS="ingestion/CKD.pdf,ingestion/Hypertension.pdf,ingestion/HeartFailure.pdf,ingestion/Diabetes.pdf,ingestion/Stroke.pdf"
 python -m ingestion.script
 ```
 

@@ -122,12 +122,11 @@ def retrieve_guideline_chunks(
     rerank_keep_k = min(RERANK_TOP_K, top_k)
     tier1_results = rerank_chunks(query=query, chunks=tier1_results, top_k=rerank_keep_k)
 
-    rec_ids = [
-        r["rec_id"]
-        for r in tier1_results
-        if r["chunk_type"] in TIER1_REC_CHUNK_TYPES and r["rec_id"]
+    tier1_rec_rows = [
+        r for r in tier1_results if r["chunk_type"] in TIER1_REC_CHUNK_TYPES and r["rec_id"]
     ]
-    tier2_rows = fetch_tier2_narrative_for_recs(rec_ids)
+    rec_ids = [r["rec_id"] for r in tier1_rec_rows]
+    tier2_rows = fetch_tier2_narrative_for_recs(tier1_rec_rows)
     logger.info(
         "Tier-2 fetch: %s rec_ids → %s narrative chunks",
         len(rec_ids),

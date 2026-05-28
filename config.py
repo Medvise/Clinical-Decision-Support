@@ -17,7 +17,7 @@ DATABRICKS_TOKEN     = os.getenv("DATABRICKS_TOKEN")
 # Qdrant
 QDRANT_URL     = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-QDRANT_COLLECTION = "CDSS_V1_MultiDisease"
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "CDSS_MultiDisease_V2")
 
 # OpenAI
 OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY")

@@ -75,7 +75,7 @@ def _to_demographics(raw: dict | None) -> Demographics | None:
 
 
 def _normalize_primary(disease: str | None) -> str | None:
-    if disease in ("CKD", "hypertension", "ACHD"):
+    if disease in ("CKD", "hypertension", "ACHD", "diabetes", "stroke", "dyslipidemia"):
         return disease
     return None
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Multi-guideline ingestion → unified Qdrant payload (HTN, ACHD, KDIGO/NICE).
+Multi-guideline ingestion → unified Qdrant payload (HTN, ACHD, KDIGO/NICE, Diabetes, Stroke).
 
 PDF → ingestion.parser_ref (detect_guideline, kdigo/aha parsers) → embeddings → Qdrant
 
 Usage:
-  python -m ingestion.script path/to/KDIGO.pdf path/to/HTN.pdf ...
+  python -m ingestion.script path/to/KDIGO.pdf path/to/HTN.pdf path/to/Diabetes.pdf path/to/Stroke.pdf ...
   # or: INGEST_PDF_PATHS="a.pdf,b.pdf" python -m ingestion.script
 
 Environment: QDRANT_URL, QDRANT_COLLECTION, EMBEDDINGS_URL (see config.py defaults).

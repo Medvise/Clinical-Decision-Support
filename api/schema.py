@@ -9,7 +9,7 @@ EvidenceMode = Literal["rag", "llm_synthesis"]
 ConfidenceLevel = Literal["High", "Medium", "Low"]
 RouteType = Literal["patient_specific", "general_guideline", "clarification_needed"]
 FlagSeverity = Literal["info", "warning", "critical"]
-DiseaseTag = Literal["CKD", "hypertension", "ACHD"]
+DiseaseTag = Literal["CKD", "hypertension", "ACHD", "diabetes", "stroke", "dyslipidemia"]
 
 
 class CDSSRequest(BaseModel):

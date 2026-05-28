@@ -9,7 +9,14 @@ from __future__ import annotations
 
 # ── Retrieval filter allowlists (LLM tagger + Qdrant must filters) ─────────────
 
-ALLOWED_DISEASE_TAGS = frozenset({"CKD", "hypertension", "ACHD"})
+ALLOWED_DISEASE_TAGS = frozenset({
+    "CKD",
+    "hypertension",
+    "ACHD",
+    "diabetes",
+    "stroke",
+    "dyslipidemia",
+})
 ALLOWED_CKD_STAGE_TAGS = frozenset({"G1", "G2", "G3", "G3a", "G3b", "G4", "G5", "A1", "A2", "A3"})
 ALLOWED_BP_STAGE_TAGS = frozenset({"normal", "elevated", "stage1", "stage2", "severe"})
 ALLOWED_COMORBIDITY_TAGS = frozenset({
@@ -48,6 +55,17 @@ QUERY_DISEASE_KEYWORDS: dict[str, list[str]] = {
     ],
     "ACHD": [
         "achd", "congenital heart", "fontan", "cyanotic heart",
+    ],
+    "diabetes": [
+        "diabetes", "diabetic", "glycemic", "hba1c", "t2d", "t1d",
+        "ada", "standards of care",
+    ],
+    "stroke": [
+        "stroke", "cerebrovascular", "tia", "ischemic stroke", "hemorrhagic stroke",
+    ],
+    "dyslipidemia": [
+        "cholesterol", "ldl", "hdl", "triglyceride", "lipid", "statin",
+        "dyslipidemia", "hyperlipidemia", "hypercholesterolemia",
     ],
 }
 
@@ -226,4 +244,11 @@ CROSS_DISEASE_MAP: dict[str, tuple[str, list[str]]] = {
     "KDIGO_CVD": ("KDIGO", ["cardiovascular", "coronary", "heart failure"]),
     "ACHD_HF": ("ACHD", ["heart failure", "hfref", "hfpef", "ejection fraction"]),
     "ACHD_pregnancy": ("ACHD", ["pregnant", "pregnancy", "obstetric"]),
+    "Diabetes_CKD": ("Diabetes", ["ckd", "chronic kidney", "egfr", "albuminuria"]),
+    "Diabetes_HTN": ("Diabetes", ["hypertension", "blood pressure", "bp control"]),
+    "Diabetes_CVD": ("Diabetes", ["cardiovascular", "coronary", "ascvd", "heart failure"]),
+    "LIPID_diabetes": ("LIPID", ["diabetes", "glycemic", "hba1c"]),
+    "LIPID_CKD": ("LIPID", ["ckd", "chronic kidney", "egfr"]),
+    "STROKE_diabetes": ("STROKE", ["diabetes", "glycemic"]),
+    "STROKE_HTN": ("STROKE", ["hypertension", "blood pressure"]),
 }

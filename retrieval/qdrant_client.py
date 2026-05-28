@@ -71,6 +71,7 @@ def query_chunks(
             "rec_id": pl.get("rec_id", ""),
             "section": pl.get("section_id", ""),
             "guideline": pl.get("guideline", "") or "unknown",
+            "disease_tags": list(pl.get("disease_tags") or []),
             "grade": kdigo_grade or legacy_grade,
             "cor": pl.get("cor", "") or "",
             "loe": pl.get("loe", "") or "",
@@ -80,9 +81,22 @@ def query_chunks(
     return results
 
 
-def fetch_tier2_narrative_for_recs(rec_ids: list[str]) -> list[dict]:
+def fetch_tier2_narrative_for_recs(tier1_rows: list[dict]) -> list[dict]:
+    rec_ids = [str(r.get("rec_id", "")).strip() for r in tier1_rows if r.get("rec_id")]
     if not rec_ids:
         return []
+
+    by_rec_id: dict[str, dict[str, set[str]]] = {}
+    for row in tier1_rows:
+        rec_id = str(row.get("rec_id", "")).strip()
+        if not rec_id:
+            continue
+        guideline = str(row.get("guideline") or "").strip()
+        disease_tags = {str(t).strip() for t in (row.get("disease_tags") or []) if str(t).strip()}
+        state = by_rec_id.setdefault(rec_id, {"guidelines": set(), "disease_tags": set()})
+        if guideline:
+            state["guidelines"].add(guideline)
+        state["disease_tags"].update(disease_tags)
 
     narrative_filter = Filter(
         must=[
@@ -103,9 +117,27 @@ def fetch_tier2_narrative_for_recs(rec_ids: list[str]) -> list[dict]:
     out: list[dict] = []
     for p in points:
         pl = getattr(p, "payload", None) or {}
+        parent_rec_id = str(pl.get("parent_rec_id", "")).strip()
+        if not parent_rec_id:
+            continue
+        guard = by_rec_id.get(parent_rec_id)
+        if not guard:
+            continue
+
+        narrative_guideline = str(pl.get("guideline", "")).strip()
+        if guard["guidelines"] and narrative_guideline and narrative_guideline not in guard["guidelines"]:
+            continue
+
+        narrative_disease_tags = {
+            str(t).strip() for t in (pl.get("disease_tags") or []) if str(t).strip()
+        }
+        if guard["disease_tags"] and narrative_disease_tags:
+            if not narrative_disease_tags.intersection(guard["disease_tags"]):
+                continue
+
         out.append({
             "text": pl.get("text", ""),
-            "parent_rec_id": pl.get("parent_rec_id", "") or "",
+            "parent_rec_id": parent_rec_id,
             "guideline": pl.get("guideline", "") or "unknown",
             "chunk_type": pl.get("chunk_type", "unknown"),
         })
